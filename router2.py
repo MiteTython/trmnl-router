@@ -366,7 +366,9 @@ payload["bart_a"] = {
 # EMIT — POST TO WEBHOOK
 # -------------------------------------------------
 
-json_payload = json.dumps(payload, separators=(",", ":"))
+# TRMNL requires payload nested in merge_variables
+wrapped_payload = {"merge_variables": payload}
+json_payload = json.dumps(wrapped_payload, separators=(",", ":"))
 
 response = requests.post(
     TRMNL_WEBHOOK_URL,

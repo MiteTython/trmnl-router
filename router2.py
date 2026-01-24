@@ -50,12 +50,19 @@ def mins(td): return int(td.total_seconds() // 60)
 
 def get_bus_json(stop_id, walk_min, ride_min, route_filter):
     url = f"https://api.actransit.org/transit/actrealtime/prediction?stpid={stop_id}&token={AC_API_KEY}"
-    r = requests.get(url, timeout=10)
+    
+    try:
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+    except (requests.RequestException, ValueError) as e:
+        print(f"AC Transit API error for stop {stop_id}: {e}")
+        return []
 
     out = []
     now = datetime.now()
 
-    prds = r.json().get("bustime-response", {}).get("prd", [])
+    prds = data.get("bustime-response", {}).get("prd", [])
 
     for p in prds:
         if not route_filter(p["rt"]):
@@ -267,9 +274,15 @@ def get_bart():
     trips = load_csv("trips.txt", "trip_id")
     routes = load_csv("routes.txt", "route_id")
 
-    r = requests.get(BART_GTFS_RT, timeout=15)
-    feed = gtfs_realtime_pb2.FeedMessage()
-    feed.ParseFromString(r.content)
+    try:
+        r = requests.get(BART_GTFS_RT, timeout=15)
+        r.raise_for_status()
+        feed = gtfs_realtime_pb2.FeedMessage()
+        feed.ParseFromString(r.content)
+    except (requests.RequestException, Exception) as e:
+        print(f"BART API error: {e}")
+        return [], []
+
 
     now = datetime.now()
     arrival_19 = now + timedelta(minutes=WALK_19TH)
